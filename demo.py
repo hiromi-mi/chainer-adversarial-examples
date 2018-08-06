@@ -9,7 +9,7 @@ import argparse
 
 import chainer
 import chainer.functions as F
-import cupy
+#import cupy
 import numpy as np
 
 from attacks import fgsm
@@ -51,14 +51,15 @@ def visualize(adv_images, prob, img_size, filename):
 
 def sample(dataset, n_samples):
     images, _ = test_mnist[np.random.choice(len(dataset), n_samples)]
-    images = chainer.cuda.to_gpu(images, args.gpu)
+    #images = chainer.cuda.to_gpu(images, args.gpu)
+    images = chainer.cuda.to_cpu(images, args.gpu)
     return images
 
 
 # Setup model, dataset
 model = MLP(args.unit, 10)
-chainer.cuda.get_device_from_id(args.gpu).use()
-model.to_gpu()
+#chainer.cuda.get_device_from_id(args.gpu).use()
+#model.to_gpu()
 xp = chainer.cuda.get_array_module(model)
 chainer.serializers.load_npz(args.model, model)
 _, test_mnist = chainer.datasets.get_mnist()
@@ -67,25 +68,29 @@ _, test_mnist = chainer.datasets.get_mnist()
 images = sample(test_mnist, N_gen)
 adv_images = fgsm(model, images, eps=0.2)
 prob = F.softmax(model(adv_images), axis=1).data
-visualize(cupy.asnumpy(adv_images), cupy.asnumpy(prob), img_size, 'fgsm.png')
+#visualize(cupy.asnumpy(adv_images), cupy.asnumpy(prob), img_size, 'fgsm.png')
+visualize(adv_images, prob, img_size, 'fgsm.png')
 
 # Fast Gradient Sign Method (iterative)
 images = sample(test_mnist, N_gen)
 adv_images = fgsm(model, images, eps=0.01, iterations=20)
 prob = F.softmax(model(adv_images), axis=1).data
-visualize(cupy.asnumpy(adv_images), cupy.asnumpy(prob), img_size,
-          'fgsm_iterative.png')
+#visualize(cupy.asnumpy(adv_images), cupy.asnumpy(prob), img_size,
+#          'fgsm_iterative.png')
+visualize(adv_images, prob, img_size, 'fgsm_iterative.png')
 
 # Target class Gradient Sign Method (least-likely)
 images = sample(test_mnist, N_gen)
 adv_images = tgsm(model, images, eps=0.15)
 prob = F.softmax(model(adv_images), axis=1).data
-visualize(cupy.asnumpy(adv_images), cupy.asnumpy(prob), img_size,
-          'tgsm.png')
+#visualize(cupy.asnumpy(adv_images), cupy.asnumpy(prob), img_size,
+#          'tgsm.png')
+visualize(adv_images, prob, img_size, 'tgsm.png')
 
 # Target class Gradient Sign Method (target assigned)
 images = sample(test_mnist, N_gen)
 adv_images = tgsm(model, images, target=8, eps=0.3)
 prob = F.softmax(model(adv_images), axis=1).data
-visualize(cupy.asnumpy(adv_images), cupy.asnumpy(prob), img_size,
-          'tgsm_target_assigned.png')
+#visualize(cupy.asnumpy(adv_images), cupy.asnumpy(prob), img_size,
+#          'tgsm_target_assigned.png')
+visualize(adv_images, prob, img_size, 'tgsm_target_assigned.png')
